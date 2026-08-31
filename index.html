@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tennis Cat 2D</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            overflow: hidden;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: #111;
+            user-select: none;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
+        }
+        .ui-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+        .hidden { display: none !important; }
+        
+        h1 {
+            font-size: 2.3rem;
+            color: #ff9800;
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .score-display {
+            font-size: 1.8rem;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .score-number {
+            color: #ff9800;
+            font-size: 3rem;
+            font-weight: bold;
+            display: block;
+        }
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            background: #4caf50;
+            border: 3px solid #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #2e7d32;
+            margin: 6px;
+            width: 80%;
+            max-width: 260px;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2e7d32; }
+        .btn-inventory { background: #2196f3; box-shadow: 0 5px 0 #1565c0; }
+        .btn-inventory:active { box-shadow: 0 2px 0 #1565c0; }
+        .btn-diff { background: #ff9800; box-shadow: 0 5px 0 #e65100; }
+        .btn-diff:active { box-shadow: 0 2px 0 #e65100; }
+        .btn-boss { background: #f44336; box-shadow: 0 5px 0 #c62828; }
+        .btn-boss:active { box-shadow: 0 2px 0 #c62828; }
+        
+        .skin-grid, .diff-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 80%;
+            max-width: 260px;
+        }
+        .skin-btn {
+            padding: 12px;
+            font-size: 1.2rem;
+            border-radius: 15px;
+            border: 2px solid #fff;
+            background: #2196f3;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #1565c0;
+        }
+        .skin-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1565c0; }
+        
+        #hud {
+            position: absolute;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #ff9800;
+            text-shadow: 4px 4px 0 #000;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Главное меню -->
+        <div id="main-menu" class="ui-screen">
+            <h1>🐱 TENNIS CAT 🎾</h1>
+            <button id="btn-start" class="btn">ИГРАТЬ</button>
+            <button id="btn-inventory" class="btn btn-inventory">ИНВЕНТАРЬ</button>
+        </div>
+
+        <!-- Выбор сложности -->
+        <div id="difficulty-screen" class="ui-screen hidden">
+            <h1>ВЫБОР СЛОЖНОСТИ</h1>
+            <div class="diff-grid">
+                <button class="btn" data-diff="easy" style="background: #8bc34a; box-shadow: 0 5px 0 #558b2f;">👶 ЛЕГКО</button>
+                <button class="btn" data-diff="medium">😎 СРЕДНЕ</button>
+                <button class="btn" data-diff="hard" style="background: #ff9800; box-shadow: 0 5px 0 #e65100;">🔥 СЛОЖНО</button>
+                <button class="btn btn-boss" data-diff="boss">😈 БОСС</button>
+            </div>
+            <button id="btn-diff-back" class="btn btn-inventory">НАЗАД</button>
+        </div>
+
+        <!-- Счёт в игре -->
+        <div id="hud" class="hidden">0 / 10</div>
+
+        <!-- Окно Победы -->
+        <div id="win-screen" class="ui-screen hidden">
+            <h1 style="color: #4caf50;">🏆 ПОБЕДА!</h1>
+            <div class="score-display">
+                ВЫ ОБЫГРАЛИ КОТА!
+                <span id="win-score-text" class="score-number" style="color: #4caf50;">10 / 10</span>
+            </div>
+            <button id="btn-win-restart" class="btn">ЕЩЕ РАЗ</button>
+            <button id="btn-win-menu" class="btn btn-inventory">В МЕНЮ</button>
+        </div>
+
+        <!-- Окно Проигрыша -->
+        <div id="game-over-screen" class="ui-screen hidden">
+            <h1 style="color: #f44336;">ИГРА ОКОНЧЕНА!</h1>
+            <div class="score-display">
+                ГОЛОВ ЗАБИТО:
+                <span id="final-score" class="score-number">0</span>
+            </div>
+            <button id="btn-restart" class="btn">ИГРАТЬ СНОВА</button>
+            <button id="btn-gameover-diff" class="btn btn-diff">СЛОЖНОСТЬ</button>
+            <button id="btn-gameover-inventory" class="btn btn-inventory">ГАРДЕРОБ</button>
+        </div>
+
+        <!-- Гардероб -->
+        <div id="inventory-screen" class="ui-screen hidden">
+            <h1>ГАРДЕРОБ</h1>
+            <div class="skin-grid">
+                <button class="skin-btn" data-skin="default">🐱 Обычный котик</button>
+                <button class="skin-btn" data-skin="pirate">🏴‍☠️ Кот-Пират</button>
+                <button class="skin-btn" data-skin="police">👮 Кот-Коп</button>
+            </div>
+            <button id="btn-back" class="btn btn-inventory">НАЗАД</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ЗВУКОВАЯ СИСТЕМА (WEB AUDIO API) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        const Sound = {
+            click() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            },
+            hitSoft() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            },
+            hitHard() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            },
+            catHit() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(450, audioCtx.currentTime + 0.09);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.09);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.09);
+            },
+            wall() {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            },
+            goal() {
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.12);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.12);
+                });
+            },
+            win() {
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.25);
+                });
+            },
+            lose() {
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                [300, 260, 200, 150].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.15);
+                });
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const URLS = {
+            bg: 'https://i.ibb.co/Z1YF7SQf/image-2cc002.jpg',
+            catDefault: 'https://i.ibb.co/Q3HJN1Nm/Gemini-Generated-Image-h7tiw0h7tiw0h7ti.jpg',
+            catPirate: 'https://i.ibb.co/1GpS2R9p/image.png',
+            catPolice: 'https://i.ibb.co/gMTP4H22/image-2cc2cc.jpg',
+            racket: 'https://i.ibb.co/Gf785Xkq/image.png'
+        };
+
+        const sprites = {};
+
+        function loadTransparentImage(key, url) {
+            const rawImg = new Image();
+            rawImg.crossOrigin = 'Anonymous';
+            rawImg.src = url;
+            rawImg.onload = function() {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = rawImg.naturalWidth;
+                tempCanvas.height = rawImg.naturalHeight;
+                tempCtx.drawImage(rawImg, 0, 0);
+
+                try {
+                    const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imgData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i + 1], b = data[i + 2];
+                        if (r > 220 && g > 220 && b > 220) {
+                            data[i + 3] = 0;
+                        }
+                    }
+
+                    tempCtx.putImageData(imgData, 0, 0);
+                    const cleanImg = new Image();
+                    cleanImg.src = tempCanvas.toDataURL('image/png');
+                    sprites[key] = cleanImg;
+                } catch (e) {
+                    sprites[key] = rawImg;
+                }
+            };
+        }
+
+        for (let key in URLS) {
+            if (key === 'bg') {
+                sprites[key] = new Image();
+                sprites[key].src = URLS[key];
+            } else {
+                loadTransparentImage(key, URLS[key]);
+            }
+        }
+
+        const DIFFICULTY_SETTINGS = {
+            easy:   { baseSpeed: 4, catSize: 130, catSpeed: 0.1, missChance: 0.25 },
+            medium: { baseSpeed: 6, catSize: 135, catSpeed: 0.2, missChance: 0.15 },
+            hard:   { baseSpeed: 8, catSize: 140, catSpeed: 0.3, missChance: 0.08 },
+            boss:   { baseSpeed: 10, catSize: 160, catSpeed: 0.45, missChance: 0.03 }
+        };
+
+        const WIN_SCORE = 10;
+        let currentDiff = 'medium';
+
+        let score = 0;
+        let isPlaying = false;
+        let currentSkin = 'default';
+        let isDragging = false;
+        let catTargetX = 0;
+
+        const ball = { 
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            baseRadius: 16, currentRadius: 16,
+            progress: 0,
+            scaleX: 1, scaleY: 1
+        };
+
+        const cat = { x: 0, y: 0, width: 130, height: 130 };
+        const racket = { 
+            x: 0, y: 0, 
+            prevX: 0, prevY: 0,
+            vx: 0, vy: 0,
+            width: 90, height: 110 
+        };
+
+        function resetGame() {
+            const settings = DIFFICULTY_SETTINGS[currentDiff];
+            cat.width = settings.catSize;
+            cat.height = settings.catSize;
+            cat.x = canvas.width / 2;
+            cat.y = canvas.height * 0.28;
+            catTargetX = cat.x;
+
+            racket.x = canvas.width / 2;
+            racket.y = canvas.height * 0.78;
+            racket.prevX = racket.x;
+            racket.prevY = racket.y;
+            racket.vx = 0;
+            racket.vy = 0;
+
+            serveBallFromCat();
+        }
+
+        function serveBallFromCat() {
+            const settings = DIFFICULTY_SETTINGS[currentDiff];
+            ball.x = cat.x;
+            ball.y = cat.y + 20;
+            ball.vx = (Math.random() - 0.5) * 4;
+            ball.vy = settings.baseSpeed;
+        }
+
+        function updateRacketPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            racket.prevX = racket.x;
+            racket.prevY = racket.y;
+
+            racket.x = clientX - rect.left;
+            racket.y = clientY - rect.top;
+
+            racket.vx = racket.x - racket.prevX;
+            racket.vy = racket.y - racket.prevY;
+        }
+
+        container.addEventListener('pointerdown', (e) => {
+            initAudio();
+            if (!isPlaying) return;
+            if (e.target.closest('.ui-screen:not(.hidden)')) return;
+            isDragging = true;
+            updateRacketPosition(e);
+        });
+
+        container.addEventListener('pointermove', (e) => {
+            if (isPlaying && isDragging) updateRacketPosition(e);
+        });
+
+        container.addEventListener('pointerup', () => isDragging = false);
+        container.addEventListener('pointercancel', () => isDragging = false);
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (sprites.bg && sprites.bg.complete && sprites.bg.naturalWidth > 0) {
+                ctx.drawImage(sprites.bg, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#1e3d59';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            if (isPlaying) {
+                const settings = DIFFICULTY_SETTINGS[currentDiff];
+
+                if (ball.vy < 0) {
+                    catTargetX = ball.x;
+                }
+                cat.x += (catTargetX - cat.x) * settings.catSpeed;
+
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                ball.scaleX += (1 - ball.scaleX) * 0.15;
+                ball.scaleY += (1 - ball.scaleY) * 0.15;
+
+                const startY = cat.y + 20;
+                const endY = canvas.height * 0.8;
+                ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
+                ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
+
+                if (ball.x - ball.currentRadius < 10 || ball.x + ball.currentRadius > canvas.width - 10) {
+                    ball.vx *= -1;
+                    ball.scaleX = 0.7;
+                    Sound.wall();
+                }
+
+                if (ball.vy < 0 && ball.y <= cat.y + 30) {
+                    const distToCat = Math.abs(ball.x - cat.x);
+                    
+                    if (distToCat < cat.width * 0.55 && Math.random() >= settings.missChance) {
+                        ball.vy = settings.baseSpeed + Math.random() * 2;
+                        ball.vx = (Math.random() - 0.5) * 6;
+                        ball.scaleY = 0.6;
+                        Sound.catHit();
+                    } else if (ball.y <= cat.y - 15) {
+                        score++;
+                        document.getElementById('hud').innerText = score + ' / ' + WIN_SCORE;
+                        Sound.goal();
+                        
+                        if (score >= WIN_SCORE) {
+                            gameWin();
+                            return;
+                        } else {
+                            serveBallFromCat();
+                        }
+                    }
+                }
+
+                const distToRacket = Math.hypot(ball.x - racket.x, ball.y - racket.y);
+                if (ball.vy > 0 && distToRacket < (racket.width / 2 + ball.currentRadius)) {
+                    const swingSpeed = Math.hypot(racket.vx, racket.vy);
+
+                    if (swingSpeed > 5) {
+                        ball.vy = -Math.min(18, settings.baseSpeed + swingSpeed * 0.6);
+                        ball.vx = racket.vx * 0.5 + (ball.x - racket.x) * 0.15;
+                        ball.scaleY = 0.4;
+                        Sound.hitHard();
+                    } else {
+                        ball.vy = -Math.max(3, settings.baseSpeed * 0.6);
+                        ball.vx = (ball.x - racket.x) * 0.1;
+                        ball.scaleY = 0.8;
+                        Sound.hitSoft();
+                    }
+                }
+
+                if (ball.y > canvas.height + 40) {
+                    gameOver();
+                }
+            }
+
+            ctx.save();
+            ctx.translate(cat.x, cat.y);
+
+            let activeSprite = sprites.catDefault;
+            if (currentSkin === 'pirate') activeSprite = sprites.catPirate;
+            if (currentSkin === 'police') activeSprite = sprites.catPolice;
+
+            if (activeSprite && activeSprite.complete && activeSprite.naturalWidth > 0) {
+                ctx.drawImage(activeSprite, -cat.width / 2, -cat.height / 2, cat.width, cat.height);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, 40, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff9800';
+                ctx.fill();
+            }
+            ctx.restore();
+
+            if (isPlaying) {
+                const arcY = Math.sin(ball.progress * Math.PI) * 35;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.ellipse(ball.x, ball.y, ball.currentRadius, ball.currentRadius * 0.5, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.fill();
+
+                ctx.translate(ball.x, ball.y - arcY);
+                ctx.scale(ball.scaleX, ball.scaleY);
+                ctx.beginPath();
+                ctx.arc(0, 0, ball.currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = currentDiff === 'boss' ? '#ff1744' : '#ccff00';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.translate(racket.x, racket.y);
+            if (sprites.racket && sprites.racket.complete && sprites.racket.naturalWidth > 0) {
+                ctx.drawImage(sprites.racket, -racket.width / 2, -racket.height / 2, racket.width, racket.height);
+            } else {
+                ctx.fillStyle = '#e91e63';
+                ctx.fillRect(-racket.width / 2, -10, racket.width, 20);
+            }
+            ctx.restore();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ ---
+        function startGame() {
+            score = 0;
+            resetGame();
+            isPlaying = true;
+            
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('difficulty-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('win-screen').classList.add('hidden');
+            document.getElementById('inventory-screen').classList.add('hidden');
+            
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('hud').innerText = score + ' / ' + WIN_SCORE;
+        }
+
+        // Звуковая привязка ко всем кнопкам
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                initAudio();
+                Sound.click();
+            });
+        });
+
+        document.getElementById('btn-start').onclick = function() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('difficulty-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-diff-back').onclick = function() {
+            document.getElementById('difficulty-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        };
+
+        document.querySelectorAll('#difficulty-screen .btn[data-diff]').forEach(btn => {
+            btn.onclick = function(e) {
+                currentDiff = e.target.getAttribute('data-diff');
+                startGame();
+            };
+        });
+
+        document.getElementById('btn-restart').onclick = startGame;
+        document.getElementById('btn-win-restart').onclick = startGame;
+
+        document.getElementById('btn-gameover-diff').onclick = function() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('difficulty-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-win-menu').onclick = function() {
+            document.getElementById('win-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-inventory').onclick = function() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('inventory-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-gameover-inventory').onclick = function() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('inventory-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-back').onclick = function() {
+            document.getElementById('inventory-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+        };
+
+        document.querySelectorAll('.skin-btn').forEach(btn => {
+            btn.onclick = function(e) {
+                currentSkin = e.target.getAttribute('data-skin');
+                document.getElementById('inventory-screen').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+            };
+        });
+
+        function gameOver() {
+            isPlaying = false;
+            Sound.lose();
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('final-score').innerText = score + ' / ' + WIN_SCORE;
+            document.getElementById('game-over-screen').classList.remove('hidden');
+        }
+
+        function gameWin() {
+            isPlaying = false;
+            Sound.win();
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('win-score-text').innerText = score + ' / ' + WIN_SCORE;
+            document.getElementById('win-screen').classList.remove('hidden');
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
