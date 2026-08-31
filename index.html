@@ -2,24 +2,36 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tennis Cat 2D</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
             overflow: hidden;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
             background: #111;
+            /* Красивый и сглаженный современный шрифт для iOS и Android */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
+            -webkit-user-select: none;
             touch-action: none;
         }
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             max-width: 480px;
             margin: 0 auto;
             overflow: hidden;
+            background: #000;
         }
         #gameCanvas {
             display: block;
@@ -37,87 +49,109 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 100;
+            padding: 20px;
         }
         .hidden { display: none !important; }
         
         h1 {
-            font-size: 2.3rem;
+            font-size: 2.2rem;
+            font-weight: 900;
             color: #ff9800;
-            text-shadow: 3px 3px 0px #000;
-            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
             text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .score-display {
-            font-size: 1.8rem;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: #fff;
-            text-shadow: 2px 2px 0 #000;
             margin-bottom: 25px;
             text-align: center;
         }
         .score-number {
             color: #ff9800;
             font-size: 3rem;
-            font-weight: bold;
+            font-weight: 900;
             display: block;
+            margin-top: 5px;
         }
         .btn {
-            padding: 12px 30px;
-            font-size: 1.3rem;
-            font-weight: bold;
+            padding: 16px 24px;
+            font-size: 1.2rem;
+            font-weight: 800;
             color: white;
             background: #4caf50;
-            border: 3px solid #fff;
-            border-radius: 50px;
+            border: none;
+            border-radius: 16px;
             cursor: pointer;
-            box-shadow: 0 5px 0 #2e7d32;
-            margin: 6px;
-            width: 80%;
-            max-width: 260px;
-            transition: transform 0.1s;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            margin: 8px 0;
+            width: 100%;
+            max-width: 280px;
+            transition: transform 0.1s, opacity 0.1s;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2e7d32; }
-        .btn-inventory { background: #2196f3; box-shadow: 0 5px 0 #1565c0; }
-        .btn-inventory:active { box-shadow: 0 2px 0 #1565c0; }
-        .btn-diff { background: #ff9800; box-shadow: 0 5px 0 #e65100; }
-        .btn-diff:active { box-shadow: 0 2px 0 #e65100; }
-        .btn-boss { background: #f44336; box-shadow: 0 5px 0 #c62828; }
-        .btn-boss:active { box-shadow: 0 2px 0 #c62828; }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-inventory { background: #2196f3; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4); }
+        .btn-diff { background: #ff9800; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4); }
+        .btn-boss { background: #f44336; box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4); }
         
         .skin-grid, .diff-grid {
             display: flex;
             flex-direction: column;
             gap: 10px;
             margin-bottom: 20px;
-            width: 80%;
-            max-width: 260px;
+            width: 100%;
+            max-width: 280px;
         }
         .skin-btn {
-            padding: 12px;
-            font-size: 1.2rem;
-            border-radius: 15px;
-            border: 2px solid #fff;
+            padding: 14px;
+            font-size: 1.1rem;
+            border-radius: 14px;
+            border: none;
             background: #2196f3;
             color: white;
             cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 0 #1565c0;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
         }
-        .skin-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1565c0; }
+        .skin-btn:active { transform: scale(0.96); }
         
         #hud {
             position: absolute;
-            top: 30px;
+            top: 40px;
             width: 100%;
             text-align: center;
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 900;
             color: #ff9800;
-            text-shadow: 4px 4px 0 #000;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.8);
             pointer-events: none;
             z-index: 50;
+        }
+
+        /* Полноэкранная подсказка для iOS Safari */
+        #ios-fullscreen-prompt {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
         }
     </style>
 </head>
@@ -130,16 +164,16 @@
         <div id="main-menu" class="ui-screen">
             <h1>🐱 TENNIS CAT 🎾</h1>
             <button id="btn-start" class="btn">ИГРАТЬ</button>
-            <button id="btn-inventory" class="btn btn-inventory">ИНВЕНТАРЬ</button>
+            <button id="btn-inventory" class="btn btn-inventory">ГАРДЕРОБ</button>
         </div>
 
         <!-- Выбор сложности -->
         <div id="difficulty-screen" class="ui-screen hidden">
-            <h1>ВЫБОР СЛОЖНОСТИ</h1>
+            <h1>СЛОЖНОСТЬ</h1>
             <div class="diff-grid">
-                <button class="btn" data-diff="easy" style="background: #8bc34a; box-shadow: 0 5px 0 #558b2f;">👶 ЛЕГКО</button>
+                <button class="btn" data-diff="easy" style="background: #8bc34a;">👶 ЛЕГКО</button>
                 <button class="btn" data-diff="medium">😎 СРЕДНЕ</button>
-                <button class="btn" data-diff="hard" style="background: #ff9800; box-shadow: 0 5px 0 #e65100;">🔥 СЛОЖНО</button>
+                <button class="btn" data-diff="hard" style="background: #ff9800;">🔥 СЛОЖНО</button>
                 <button class="btn btn-boss" data-diff="boss">😈 БОСС</button>
             </div>
             <button id="btn-diff-back" class="btn btn-inventory">НАЗАД</button>
@@ -161,7 +195,7 @@
 
         <!-- Окно Проигрыша -->
         <div id="game-over-screen" class="ui-screen hidden">
-            <h1 style="color: #f44336;">ИГРА ОКОНЧЕНА!</h1>
+            <h1 style="color: #f44336;">ИГРА ОКОНЧЕНА</h1>
             <div class="score-display">
                 ГОЛОВ ЗАБИТО:
                 <span id="final-score" class="score-number">0</span>
@@ -184,6 +218,11 @@
     </div>
 
     <script>
+        // Предотвращение свайпов браузера на iOS
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
         // --- ЗВУКОВАЯ СИСТЕМА (WEB AUDIO API) ---
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
@@ -446,7 +485,15 @@
             racket.prevY = racket.y;
 
             racket.x = clientX - rect.left;
-            racket.y = clientY - rect.top;
+            let targetY = clientY - rect.top;
+
+            // 1. ОГРАНИЧЕНИЕ: СЕТКА (ракетка не может подняться выше 52% экрана)
+            const netLimitY = canvas.height * 0.52;
+            if (targetY < netLimitY) {
+                targetY = netLimitY;
+            }
+
+            racket.y = targetY;
 
             racket.vx = racket.x - racket.prevX;
             racket.vy = racket.y - racket.prevY;
@@ -546,6 +593,7 @@
                 }
             }
 
+            // Отрисовка Кота
             ctx.save();
             ctx.translate(cat.x, cat.y);
 
@@ -563,6 +611,7 @@
             }
             ctx.restore();
 
+            // Отрисовка Мяча
             if (isPlaying) {
                 const arcY = Math.sin(ball.progress * Math.PI) * 35;
                 
@@ -584,6 +633,7 @@
                 ctx.restore();
             }
 
+            // Отрисовка Ракетки
             ctx.save();
             ctx.translate(racket.x, racket.y);
             if (sprites.racket && sprites.racket.complete && sprites.racket.naturalWidth > 0) {
@@ -613,7 +663,6 @@
             document.getElementById('hud').innerText = score + ' / ' + WIN_SCORE;
         }
 
-        // Звуковая привязка ко всем кнопкам
         document.querySelectorAll('button').forEach(btn => {
             btn.addEventListener('click', () => {
                 initAudio();
