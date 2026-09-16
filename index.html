@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tennis Cat 2D</title>
-    <!-- Яндекс Игры SDK -->
     <script src="https://yandex.ru/games/sdk/v2"></script>
     <style>
         * { 
@@ -18,7 +17,7 @@
             height: 100%;
             height: 100dvh;
             overflow: hidden;
-            background: #111;
+            background: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
@@ -29,7 +28,7 @@
             width: 100vw;
             height: 100vh;
             height: 100dvh;
-            max-width: 480px;
+            max-width: 100%;
             margin: 0 auto;
             overflow: hidden;
             background: #000;
@@ -100,9 +99,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .btn * {
-            pointer-events: none;
-        }
+        .btn * { pointer-events: none; }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-inventory { background: #2196f3; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4); }
         .btn-diff { background: #ff9800; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4); }
@@ -210,7 +207,6 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- Главное меню -->
         <div id="main-menu" class="ui-screen">
             <h1>🐱 TENNIS CAT 🎾</h1>
             <div id="best-score-display" class="score-display" style="margin-bottom:20px; font-size:1.1rem;">
@@ -220,7 +216,6 @@
             <button id="btn-inventory" class="btn btn-inventory" data-i18n="btnInventory">ГАРДЕРОБ</button>
         </div>
 
-        <!-- Выбор сложности -->
         <div id="difficulty-screen" class="ui-screen hidden">
             <h1 data-i18n="difficultyTitle">СЛОЖНОСТЬ</h1>
             <div class="diff-grid">
@@ -232,7 +227,6 @@
             <button id="btn-diff-back" class="btn btn-inventory" data-i18n="btnBack">НАЗАД</button>
         </div>
 
-        <!-- Счёт в игре (Вы vs Кот) -->
         <div id="hud" class="hidden">
             <div class="score-box">
                 <span class="score-title" data-i18n="playerTitle">ВЫ</span>
@@ -245,7 +239,6 @@
             </div>
         </div>
 
-        <!-- Окно Победы -->
         <div id="win-screen" class="ui-screen hidden">
             <h1 style="color: #4caf50;" data-i18n="winTitle">🏆 ПОБЕДА!</h1>
             <div class="score-display">
@@ -257,7 +250,6 @@
             <button id="btn-win-menu" class="btn btn-inventory" data-i18n="btnMenu">В МЕНЮ</button>
         </div>
 
-        <!-- Окно Проигрыша -->
         <div id="game-over-screen" class="ui-screen hidden">
             <h1 style="color: #f44336;" data-i18n="loseTitle">ПОРАЖЕНИЕ</h1>
             <div class="score-display">
@@ -269,7 +261,6 @@
             <button id="btn-gameover-inventory" class="btn btn-inventory" data-i18n="btnInventory">ГАРДЕРОБ</button>
         </div>
 
-        <!-- Гардероб -->
         <div id="inventory-screen" class="ui-screen hidden">
             <h1 data-i18n="inventoryTitle">ГАРДЕРОБ</h1>
             
@@ -290,7 +281,6 @@
     </div>
 
     <script>
-        // --- ЯЗЫКОВОЙ СЛОВАРЬ (I18N) ---
         const TRANSLATIONS = {
             ru: {
                 bestScoreText: 'Рекорд побед:',
@@ -397,7 +387,6 @@
                 }
             });
 
-            // Обновить имена скинов в списке
             skins.forEach(s => {
                 if (langData.skins && langData.skins[s.id]) {
                     s.title = langData.skins[s.id];
@@ -407,7 +396,6 @@
             updateCarousel();
         }
 
-        // --- YANDEX GAMES SDK ИНИЦИАЛИЗАЦИЯ ---
         let ysdkInstance = null;
         let pendingAssets = 0;
         let assetsAreReady = false;
@@ -423,10 +411,8 @@
                 window.ysdk = ysdk;
                 ysdkInstance = ysdk;
 
-                // Управление языком через Yandex Games SDK
                 if (ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) {
-                    const sdkLang = ysdk.environment.i18n.lang;
-                    updateUIWithLanguage(sdkLang);
+                    updateUIWithLanguage(ysdk.environment.i18n.lang);
                 } else {
                     updateUIWithLanguage('ru');
                 }
@@ -636,8 +622,55 @@
         let selectedSkinId = loadSavedSkin();
         let currentSkinIndex = Math.max(0, skins.findIndex(s => s.id === selectedSkinId));
 
+        // Встроенная векторная текстура игрового поля (без вызовов сторонних серверов)
+        const bgCanvas = document.createElement('canvas');
+        bgCanvas.width = 1024;
+        bgCanvas.height = 576;
+        const bgCtx = bgCanvas.getContext('2d');
+
+        // Отрисовка интерьера и стола
+        bgCtx.fillStyle = '#f2e8cf';
+        bgCtx.fillRect(0, 0, 1024, 300);
+        bgCtx.fillStyle = '#bc6c25';
+        bgCtx.fillRect(0, 300, 1024, 276);
+
+        // Синяя стена с матами
+        bgCtx.fillStyle = '#2a9d8f';
+        bgCtx.fillRect(0, 180, 1024, 120);
+
+        // Теннисный стол
+        bgCtx.beginPath();
+        bgCtx.moveTo(200, 576);
+        bgCtx.lineTo(824, 576);
+        bgCtx.lineTo(700, 320);
+        bgCtx.lineTo(324, 320);
+        bgCtx.closePath();
+        bgCtx.fillStyle = '#0077b6';
+        bgCtx.fill();
+        bgCtx.lineWidth = 8;
+        bgCtx.strokeStyle = '#ffffff';
+        bgCtx.stroke();
+
+        // Разметка стола
+        bgCtx.beginPath();
+        bgCtx.moveTo(512, 320);
+        bgCtx.lineTo(512, 576);
+        bgCtx.lineWidth = 4;
+        bgCtx.strokeStyle = '#ffffff';
+        bgCtx.stroke();
+
+        // Сетка
+        bgCtx.beginPath();
+        bgCtx.moveTo(300, 420);
+        bgCtx.lineTo(724, 420);
+        bgCtx.lineWidth = 6;
+        bgCtx.strokeStyle = '#e0e0e0';
+        bgCtx.stroke();
+
+        const bgDataUrl = bgCanvas.toDataURL();
+
         const URLS = {
-            bg: 'https://i.ibb.co/Z1YF7SQf/image-2cc002.jpg',
+            bg: bgDataUrl,
             racket: 'https://i.ibb.co/Gf785Xkq/image.png'
         };
 
@@ -694,7 +727,6 @@
 
         assetLoadStarted();
         sprites.bg = new Image();
-        sprites.bg.crossOrigin = 'Anonymous';
         sprites.bg.onload = assetLoadFinished;
         sprites.bg.onerror = assetLoadFinished;
         sprites.bg.src = URLS.bg;
@@ -715,7 +747,6 @@
             });
         });
 
-        // Настройки ИИ и Игры
         const DIFFICULTY_SETTINGS = {
             'easy':   { baseSpeed: 5, catSize: 130, catSpeed: 0.08, missChance: 0.35, attackPower: 1.0, aimAccuracy: 0.2 },
             'medium': { baseSpeed: 7, catSize: 135, catSpeed: 0.15, missChance: 0.18, attackPower: 1.2, aimAccuracy: 0.5 },
@@ -738,6 +769,12 @@
         let catTargetX = 0;
         let approachResolved = true;
 
+        let bgScale = 1;
+        let bgOffsetX = 0;
+        let bgOffsetY = 0;
+        let bgDrawW = 0;
+        let bgDrawH = 0;
+
         const ball = { 
             x: 0, y: 0,
             vx: 0, vy: 0,
@@ -757,14 +794,17 @@
         function resetGame() {
             const settings = getSettings();
             
-            cat.width = settings.catSize;
-            cat.height = settings.catSize;
-            cat.x = canvas.width / 2;
-            cat.y = canvas.height * 0.28;
+            cat.width = settings.catSize * bgScale;
+            cat.height = settings.catSize * bgScale;
+
+            cat.x = bgOffsetX + bgDrawW / 2;
+            cat.y = bgOffsetY + bgDrawH * 0.45;
             catTargetX = cat.x;
 
-            racket.x = canvas.width / 2;
-            racket.y = canvas.height * 0.78;
+            racket.width = 90 * bgScale;
+            racket.height = 110 * bgScale;
+            racket.x = bgOffsetX + bgDrawW / 2;
+            racket.y = bgOffsetY + bgDrawH * 0.82;
             racket.prevX = racket.x;
             racket.prevY = racket.y;
             racket.vx = 0;
@@ -786,18 +826,18 @@
             ball.scaleX = 1;
             ball.scaleY = 1;
 
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
+            ball.x = bgOffsetX + bgDrawW / 2;
+            ball.y = bgOffsetY + bgDrawH / 2;
 
             let targetX = 0;
             let targetY = 0;
 
             if (loser === 'player') {
                 targetX = racket.x;
-                targetY = racket.y - 30;
+                targetY = racket.y - 30 * bgScale;
             } else {
                 targetX = cat.x;
-                targetY = cat.y + 20;
+                targetY = cat.y + 20 * bgScale;
             }
 
             const duration = 1200;
@@ -836,18 +876,18 @@
             if (server === 'cat') {
                 approachResolved = true;
                 ball.x = cat.x;
-                ball.y = cat.y + 20;
+                ball.y = cat.y + 20 * bgScale;
                 
-                const targetCorner = racket.x > canvas.width / 2 ? canvas.width * 0.2 : canvas.width * 0.8;
+                const targetCorner = racket.x > (bgOffsetX + bgDrawW / 2) ? (bgOffsetX + bgDrawW * 0.2) : (bgOffsetX + bgDrawW * 0.8);
                 const dx = targetCorner - ball.x;
-                ball.vx = (dx / canvas.width) * (5 * settings.attackPower);
-                ball.vy = settings.baseSpeed;
+                ball.vx = (dx / bgDrawW) * (5 * settings.attackPower * bgScale);
+                ball.vy = settings.baseSpeed * bgScale;
             } else {
                 approachResolved = false;
                 ball.x = racket.x;
-                ball.y = racket.y - 30;
-                ball.vx = (Math.random() - 0.5) * 4;
-                ball.vy = -settings.baseSpeed;
+                ball.y = racket.y - 30 * bgScale;
+                ball.vx = (Math.random() - 0.5) * 4 * bgScale;
+                ball.vy = -settings.baseSpeed * bgScale;
             }
         }
 
@@ -859,14 +899,18 @@
             racket.prevX = racket.x;
             racket.prevY = racket.y;
 
-            racket.x = clientX - rect.left;
+            let targetX = clientX - rect.left;
             let targetY = clientY - rect.top;
 
-            const netLimitY = canvas.height * 0.52;
-            if (targetY < netLimitY) {
-                targetY = netLimitY;
-            }
+            targetX = Math.max(bgOffsetX + racket.width/2, Math.min(bgOffsetX + bgDrawW - racket.width/2, targetX));
 
+            const netLimitY = bgOffsetY + bgDrawH * 0.52;
+            const bottomLimitY = bgOffsetY + bgDrawH - racket.height/2;
+
+            if (targetY < netLimitY) targetY = netLimitY;
+            if (targetY > bottomLimitY) targetY = bottomLimitY;
+
+            racket.x = targetX;
             racket.y = targetY;
 
             racket.vx = racket.x - racket.prevX;
@@ -894,37 +938,51 @@
                 let tempY = ball.y;
                 let tempVx = ball.vx;
 
-                while (tempY > cat.y + 20) {
+                while (tempY > cat.y + 20 * bgScale) {
                     tempY += ball.vy;
                     predictedX += tempVx;
-                    if (predictedX < 10 || predictedX > canvas.width - 10) {
+                    if (predictedX < bgOffsetX + 10 || predictedX > bgOffsetX + bgDrawW - 10) {
                         tempVx *= -1;
                     }
                 }
 
                 let attackOffset = 0;
                 if (Math.random() < settings.aimAccuracy) {
-                    const oppositeSide = racket.x > canvas.width / 2 ? -35 : 35;
+                    const oppositeSide = racket.x > (bgOffsetX + bgDrawW / 2) ? -35 * bgScale : 35 * bgScale;
                     attackOffset = oppositeSide;
                 }
 
                 catTargetX = predictedX + attackOffset;
             } else {
-                catTargetX = canvas.width / 2;
+                catTargetX = bgOffsetX + bgDrawW / 2;
             }
 
             cat.x += (catTargetX - cat.x) * settings.catSpeed;
-            cat.x = Math.max(cat.width / 3, Math.min(canvas.width - cat.width / 3, cat.x));
+            cat.x = Math.max(bgOffsetX + cat.width / 3, Math.min(bgOffsetX + bgDrawW - cat.width / 3, cat.x));
         }
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (sprites.bg && sprites.bg.complete && sprites.bg.naturalWidth > 0) {
-                ctx.drawImage(sprites.bg, 0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = '#1e3d59';
+                const imgRatio = sprites.bg.naturalWidth / sprites.bg.naturalHeight;
+                const canvasRatio = canvas.width / canvas.height;
+
+                if (canvasRatio > imgRatio) {
+                    bgDrawH = canvas.height;
+                    bgDrawW = canvas.height * imgRatio;
+                } else {
+                    bgDrawW = canvas.width;
+                    bgDrawH = canvas.width / imgRatio;
+                }
+
+                bgScale = bgDrawH / sprites.bg.naturalHeight;
+                bgOffsetX = (canvas.width - bgDrawW) / 2;
+                bgOffsetY = (canvas.height - bgDrawH) / 2;
+
+                ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(sprites.bg, bgOffsetX, bgOffsetY, bgDrawW, bgDrawH);
             }
 
             if (isPlaying) {
@@ -939,22 +997,21 @@
                     ball.scaleX += (1 - ball.scaleX) * 0.15;
                     ball.scaleY += (1 - ball.scaleY) * 0.15;
 
-                    const startY = cat.y + 20;
-                    const endY = canvas.height * 0.8;
+                    const startY = cat.y + 20 * bgScale;
+                    const endY = bgOffsetY + bgDrawH * 0.82;
                     ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
-                    ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
+                    ball.currentRadius = ball.baseRadius * bgScale * (0.6 + ball.progress * 0.6);
 
-                    if (ball.x - ball.currentRadius < 10 || ball.x + ball.currentRadius > canvas.width - 10) {
+                    if (ball.x - ball.currentRadius < bgOffsetX + 10 || ball.x + ball.currentRadius > bgOffsetX + bgDrawW - 10) {
                         ball.vx *= -1;
-                        if (Math.abs(ball.vx) < 2) {
-                            ball.vx = (ball.x < canvas.width / 2 ? 1 : -1) * 3;
+                        if (Math.abs(ball.vx) < 2 * bgScale) {
+                            ball.vx = (ball.x < bgOffsetX + bgDrawW / 2 ? 1 : -1) * 3 * bgScale;
                         }
                         ball.scaleX = 0.7;
                         Sound.wall();
                     }
 
-                    // --- УДАР КОТА (БОТА) ---
-                    if (ball.vy < 0 && ball.y <= cat.y + 35) {
+                    if (ball.vy < 0 && ball.y <= cat.y + 35 * bgScale) {
                         const distToCat = Math.abs(ball.x - cat.x);
 
                         if (!approachResolved && distToCat < cat.width * 0.6) {
@@ -964,19 +1021,18 @@
                                 let attackDirection = (ball.x - cat.x) / (cat.width / 2);
                                 
                                 if (Math.random() < settings.aimAccuracy) {
-                                    const playerIsLeft = racket.x < canvas.width / 2;
+                                    const playerIsLeft = racket.x < (bgOffsetX + bgDrawW / 2);
                                     attackDirection = playerIsLeft ? 0.85 : -0.85;
                                 }
 
-                                ball.vy = (settings.baseSpeed + Math.random() * 2) * settings.attackPower;
-                                ball.vx = attackDirection * (6 + settings.attackPower * 2);
+                                ball.vy = (settings.baseSpeed + Math.random() * 2) * settings.attackPower * bgScale;
+                                ball.vx = attackDirection * (6 + settings.attackPower * 2) * bgScale;
                                 ball.scaleY = 0.5;
                                 Sound.catHit();
                             }
                         }
 
-                        // Кот пропустил мяч
-                        if (ball.vy < 0 && ball.y <= cat.y - 25) {
+                        if (ball.vy < 0 && ball.y <= cat.y - 25 * bgScale) {
                             playerScore++;
                             updateHUD();
                             Sound.goal();
@@ -989,7 +1045,6 @@
                         }
                     }
 
-                    // --- УДАР ИГРОКА ---
                     const distToRacket = Math.hypot(ball.x - racket.x, ball.y - racket.y);
                     if (ball.vy > 0 && distToRacket < (racket.width / 2 + ball.currentRadius)) {
                         const swingSpeed = Math.hypot(racket.vx, racket.vy);
@@ -997,21 +1052,20 @@
 
                         approachResolved = false;
 
-                        if (swingSpeed > 5) {
-                            ball.vy = -Math.min(20, settings.baseSpeed + swingSpeed * 0.6);
-                            ball.vx = hitPoint * 7 + racket.vx * 0.4;
+                        if (swingSpeed > 5 * bgScale) {
+                            ball.vy = -Math.min(20 * bgScale, (settings.baseSpeed + swingSpeed * 0.6) * bgScale);
+                            ball.vx = hitPoint * 7 * bgScale + racket.vx * 0.4;
                             ball.scaleY = 0.4;
                             Sound.hitHard();
                         } else {
-                            ball.vy = -Math.max(4, settings.baseSpeed * 0.7);
-                            ball.vx = hitPoint * 4;
+                            ball.vy = -Math.max(4 * bgScale, settings.baseSpeed * 0.7 * bgScale);
+                            ball.vx = hitPoint * 4 * bgScale;
                             ball.scaleY = 0.8;
                             Sound.hitSoft();
                         }
                     }
 
-                    // Игрок пропустил мяч
-                    if (ball.y > canvas.height + 40) {
+                    if (ball.y > bgOffsetY + bgDrawH + 40 * bgScale) {
                         catScore++;
                         updateHUD();
                         Sound.lose();
@@ -1023,14 +1077,13 @@
                         }
                     }
                 } else {
-                    const startY = cat.y + 20;
-                    const endY = canvas.height * 0.8;
+                    const startY = cat.y + 20 * bgScale;
+                    const endY = bgOffsetY + bgDrawH * 0.82;
                     ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
-                    ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
+                    ball.currentRadius = ball.baseRadius * bgScale * (0.6 + ball.progress * 0.6);
                 }
             }
 
-            // Отрисовка Кота
             ctx.save();
             ctx.translate(cat.x, cat.y);
 
@@ -1040,15 +1093,14 @@
                 ctx.drawImage(activeSprite, -cat.width / 2, -cat.height / 2, cat.width, cat.height);
             } else {
                 ctx.beginPath();
-                ctx.arc(0, 0, 40, 0, Math.PI * 2);
+                ctx.arc(0, 0, 40 * bgScale, 0, Math.PI * 2);
                 ctx.fillStyle = '#ff9800';
                 ctx.fill();
             }
             ctx.restore();
 
-            // Отрисовка Мяча
             if (isPlaying) {
-                const arcY = Math.sin(ball.progress * Math.PI) * 35;
+                const arcY = Math.sin(ball.progress * Math.PI) * 35 * bgScale;
                 
                 ctx.save();
                 ctx.beginPath();
@@ -1068,14 +1120,13 @@
                 ctx.restore();
             }
 
-            // Отрисовка Ракетки
             ctx.save();
             ctx.translate(racket.x, racket.y);
             if (sprites.racket && sprites.racket.complete && sprites.racket.naturalWidth > 0) {
                 ctx.drawImage(sprites.racket, -racket.width / 2, -racket.height / 2, racket.width, racket.height);
             } else {
                 ctx.fillStyle = '#e91e63';
-                ctx.fillRect(-racket.width / 2, -10, racket.width, 20);
+                ctx.fillRect(-racket.width / 2, -10 * bgScale, racket.width, 20 * bgScale);
             }
             ctx.restore();
 
