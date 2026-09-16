@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tennis Cat 2D</title>
+    <!-- Яндекс Игры SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
     <style>
         * { 
             box-sizing: border-box; 
@@ -17,7 +19,6 @@
             height: 100dvh;
             overflow: hidden;
             background: #111;
-            /* Красивый и сглаженный современный шрифт для iOS и Android */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
@@ -49,7 +50,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 100;
@@ -99,12 +100,15 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .btn * {
+            pointer-events: none;
+        }
         .btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-inventory { background: #2196f3; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4); }
         .btn-diff { background: #ff9800; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4); }
         .btn-boss { background: #f44336; box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4); }
         
-        .skin-grid, .diff-grid {
+        .diff-grid {
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -112,46 +116,92 @@
             width: 100%;
             max-width: 280px;
         }
-        .skin-btn {
-            padding: 14px;
-            font-size: 1.1rem;
-            border-radius: 14px;
-            border: none;
-            background: #2196f3;
-            color: white;
-            cursor: pointer;
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+
+        .carousel-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 20px;
         }
-        .skin-btn:active { transform: scale(0.96); }
+        .carousel-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.1s;
+        }
+        .carousel-btn:active { transform: scale(0.9); }
+        
+        .skin-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 190px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .skin-preview {
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        }
+        .skin-title {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-align: center;
+        }
         
         #hud {
             position: absolute;
-            top: 40px;
+            top: 25px;
             width: 100%;
-            text-align: center;
-            font-size: 3rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 1.6rem;
             font-weight: 900;
-            color: #ff9800;
+            color: #fff;
             text-shadow: 0 4px 12px rgba(0,0,0,0.8);
             pointer-events: none;
             z-index: 50;
         }
 
-        /* Полноэкранная подсказка для iOS Safari */
-        #ios-fullscreen-prompt {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
+        .score-box {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            color: white;
-            text-align: center;
-            padding: 20px;
+        }
+
+        .score-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .score-val {
+            font-size: 2.2rem;
+            color: #ff9800;
         }
     </style>
 </head>
@@ -163,195 +213,374 @@
         <!-- Главное меню -->
         <div id="main-menu" class="ui-screen">
             <h1>🐱 TENNIS CAT 🎾</h1>
-            <button id="btn-start" class="btn">ИГРАТЬ</button>
-            <button id="btn-inventory" class="btn btn-inventory">ГАРДЕРОБ</button>
+            <div id="best-score-display" class="score-display" style="margin-bottom:20px; font-size:1.1rem;">
+                <span data-i18n="bestScoreText">Рекорд побед:</span> <span id="best-score-value" style="color:#ff9800; font-weight:900;">0</span>
+            </div>
+            <button id="btn-start" class="btn" data-i18n="btnStart">ИГРАТЬ</button>
+            <button id="btn-inventory" class="btn btn-inventory" data-i18n="btnInventory">ГАРДЕРОБ</button>
         </div>
 
         <!-- Выбор сложности -->
         <div id="difficulty-screen" class="ui-screen hidden">
-            <h1>СЛОЖНОСТЬ</h1>
+            <h1 data-i18n="difficultyTitle">СЛОЖНОСТЬ</h1>
             <div class="diff-grid">
-                <button class="btn" data-diff="easy" style="background: #8bc34a;">👶 ЛЕГКО</button>
-                <button class="btn" data-diff="medium">😎 СРЕДНЕ</button>
-                <button class="btn" data-diff="hard" style="background: #ff9800;">🔥 СЛОЖНО</button>
-                <button class="btn btn-boss" data-diff="boss">😈 БОСС</button>
+                <button class="btn" data-diff="easy" style="background: #8bc34a;" data-i18n="diffEasy">👶 ЛЕГКО</button>
+                <button class="btn" data-diff="medium" data-i18n="diffMedium">😎 СРЕДНЕ</button>
+                <button class="btn" data-diff="hard" style="background: #ff9800;" data-i18n="diffHard">🔥 СЛОЖНО</button>
+                <button class="btn btn-boss" data-diff="boss" data-i18n="diffBoss">😈 БОСС</button>
             </div>
-            <button id="btn-diff-back" class="btn btn-inventory">НАЗАД</button>
+            <button id="btn-diff-back" class="btn btn-inventory" data-i18n="btnBack">НАЗАД</button>
         </div>
 
-        <!-- Счёт в игре -->
-        <div id="hud" class="hidden">0 / 10</div>
+        <!-- Счёт в игре (Вы vs Кот) -->
+        <div id="hud" class="hidden">
+            <div class="score-box">
+                <span class="score-title" data-i18n="playerTitle">ВЫ</span>
+                <span id="player-score" class="score-val">0</span>
+            </div>
+            <div style="font-size: 2rem; color: #ff9800;">:</div>
+            <div class="score-box">
+                <span class="score-title" data-i18n="catTitle">КОТ</span>
+                <span id="cat-score" class="score-val">0</span>
+            </div>
+        </div>
 
         <!-- Окно Победы -->
         <div id="win-screen" class="ui-screen hidden">
-            <h1 style="color: #4caf50;">🏆 ПОБЕДА!</h1>
+            <h1 style="color: #4caf50;" data-i18n="winTitle">🏆 ПОБЕДА!</h1>
             <div class="score-display">
-                ВЫ ОБЫГРАЛИ КОТА!
-                <span id="win-score-text" class="score-number" style="color: #4caf50;">10 / 10</span>
+                <span data-i18n="winSub">ВЫ ОБЫГРАЛИ КОТА!</span>
+                <span id="win-score-text" class="score-number" style="color: #4caf50;">5 : 0</span>
             </div>
-            <button id="btn-win-restart" class="btn">ЕЩЕ РАЗ</button>
-            <button id="btn-win-menu" class="btn btn-inventory">В МЕНЮ</button>
+            <button id="btn-win-restart" class="btn" data-i18n="btnRestart">ЕЩЕ РАЗ</button>
+            <button id="btn-next-level" class="btn btn-diff" data-i18n="btnNext">СЛЕД. УРОВЕНЬ ➔</button>
+            <button id="btn-win-menu" class="btn btn-inventory" data-i18n="btnMenu">В МЕНЮ</button>
         </div>
 
         <!-- Окно Проигрыша -->
         <div id="game-over-screen" class="ui-screen hidden">
-            <h1 style="color: #f44336;">ИГРА ОКОНЧЕНА</h1>
+            <h1 style="color: #f44336;" data-i18n="loseTitle">ПОРАЖЕНИЕ</h1>
             <div class="score-display">
-                ГОЛОВ ЗАБИТО:
-                <span id="final-score" class="score-number">0</span>
+                <span data-i18n="loseSub">КОТ ВЫИГРАЛ МАТЧ:</span>
+                <span id="final-score" class="score-number">0 : 5</span>
             </div>
-            <button id="btn-restart" class="btn">ИГРАТЬ СНОВА</button>
-            <button id="btn-gameover-diff" class="btn btn-diff">СЛОЖНОСТЬ</button>
-            <button id="btn-gameover-inventory" class="btn btn-inventory">ГАРДЕРОБ</button>
+            <button id="btn-restart" class="btn" data-i18n="btnPlayAgain">ИГРАТЬ СНОВА</button>
+            <button id="btn-gameover-diff" class="btn btn-diff" data-i18n="btnDifficulty">СЛОЖНОСТЬ</button>
+            <button id="btn-gameover-inventory" class="btn btn-inventory" data-i18n="btnInventory">ГАРДЕРОБ</button>
         </div>
 
         <!-- Гардероб -->
         <div id="inventory-screen" class="ui-screen hidden">
-            <h1>ГАРДЕРОБ</h1>
-            <div class="skin-grid">
-                <button class="skin-btn" data-skin="default">🐱 Обычный котик</button>
-                <button class="skin-btn" data-skin="pirate">🏴‍☠️ Кот-Пират</button>
-                <button class="skin-btn" data-skin="police">👮 Кот-Коп</button>
+            <h1 data-i18n="inventoryTitle">ГАРДЕРОБ</h1>
+            
+            <div class="carousel-container">
+                <button id="btn-prev-skin" class="carousel-btn">◄</button>
+                
+                <div class="skin-card">
+                    <img id="skin-preview-img" class="skin-preview" src="" alt="Skin Preview">
+                    <div id="skin-title-text" class="skin-title">Обычный котик</div>
+                </div>
+                
+                <button id="btn-next-skin" class="carousel-btn">►</button>
             </div>
-            <button id="btn-back" class="btn btn-inventory">НАЗАД</button>
+
+            <button id="btn-select-skin" class="btn">ВЫБРАТЬ</button>
+            <button id="btn-back" class="btn btn-inventory" data-i18n="btnBack">НАЗАД</button>
         </div>
     </div>
 
     <script>
-        // Предотвращение свайпов браузера на iOS
+        // --- ЯЗЫКОВОЙ СЛОВАРЬ (I18N) ---
+        const TRANSLATIONS = {
+            ru: {
+                bestScoreText: 'Рекорд побед:',
+                btnStart: 'ИГРАТЬ',
+                btnInventory: 'ГАРДЕРОБ',
+                difficultyTitle: 'СЛОЖНОСТЬ',
+                diffEasy: '👶 ЛЕГКО',
+                diffMedium: '😎 СРЕДНЕ',
+                diffHard: '🔥 СЛОЖНО',
+                diffBoss: '😈 БОСС',
+                btnBack: 'НАЗАД',
+                playerTitle: 'ВЫ',
+                catTitle: 'КОТ',
+                winTitle: '🏆 ПОБЕДА!',
+                winSub: 'ВЫ ОБЫГРАЛИ КОТА!',
+                btnRestart: 'ЕЩЕ РАЗ',
+                btnNext: 'СЛЕД. УРОВЕНЬ ➔',
+                btnMenu: 'В МЕНЮ',
+                loseTitle: 'ПОРАЖЕНИЕ',
+                loseSub: 'КОТ ВЫИГРАЛ МАТЧ:',
+                btnPlayAgain: 'ИГРАТЬ СНОВА',
+                btnDifficulty: 'СЛОЖНОСТЬ',
+                inventoryTitle: 'ГАРДЕРОБ',
+                btnSelect: 'ВЫБРАТЬ',
+                btnSelected: 'ВЫБРАНО',
+                skins: {
+                    default: '🐱 Обычный котик',
+                    pirate: '🏴‍☠️ Кот-Пират',
+                    police: '👮 Кот-Коп'
+                }
+            },
+            en: {
+                bestScoreText: 'Best Score:',
+                btnStart: 'PLAY',
+                btnInventory: 'WARDROBE',
+                difficultyTitle: 'DIFFICULTY',
+                diffEasy: '👶 EASY',
+                diffMedium: '😎 MEDIUM',
+                diffHard: '🔥 HARD',
+                diffBoss: '😈 BOSS',
+                btnBack: 'BACK',
+                playerTitle: 'YOU',
+                catTitle: 'CAT',
+                winTitle: '🏆 VICTORY!',
+                winSub: 'YOU BEAT THE CAT!',
+                btnRestart: 'PLAY AGAIN',
+                btnNext: 'NEXT LEVEL ➔',
+                btnMenu: 'MENU',
+                loseTitle: 'DEFEAT',
+                loseSub: 'THE CAT WON THE MATCH:',
+                btnPlayAgain: 'PLAY AGAIN',
+                btnDifficulty: 'DIFFICULTY',
+                inventoryTitle: 'WARDROBE',
+                btnSelect: 'SELECT',
+                btnSelected: 'SELECTED',
+                skins: {
+                    default: '🐱 Regular Cat',
+                    pirate: '🏴‍☠️ Pirate Cat',
+                    police: '👮 Police Cat'
+                }
+            },
+            tr: {
+                bestScoreText: 'En Yüksek Skor:',
+                btnStart: 'OYNA',
+                btnInventory: 'GARDIROP',
+                difficultyTitle: 'ZORLUK',
+                diffEasy: '👶 KOLAY',
+                diffMedium: '😎 ORTA',
+                diffHard: '🔥 ZOR',
+                diffBoss: '😈 PATRON',
+                btnBack: 'GERİ',
+                playerTitle: 'SEN',
+                catTitle: 'KEDİ',
+                winTitle: '🏆 ZAFER!',
+                winSub: 'KEDİYİ YENDİN!',
+                btnRestart: 'TEKRAR OYNA',
+                btnNext: 'SONRAKİ SEVİYE ➔',
+                btnMenu: 'MENÜ',
+                loseTitle: 'YENİLGİ',
+                loseSub: 'MAÇI KEDİ KAZANDI:',
+                btnPlayAgain: 'TEKRAR OYNA',
+                btnDifficulty: 'ZORLUK',
+                inventoryTitle: 'GARDIROP',
+                btnSelect: 'SEÇ',
+                btnSelected: 'SEÇİLDİ',
+                skins: {
+                    default: '🐱 Normal Kedi',
+                    pirate: '🏴‍☠️ Korsan Kedi',
+                    police: '👮 Polis Kedi'
+                }
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function updateUIWithLanguage(lang) {
+            const langData = TRANSLATIONS[lang] || TRANSLATIONS['en'];
+            currentLang = lang;
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (langData[key]) {
+                    el.innerText = langData[key];
+                }
+            });
+
+            // Обновить имена скинов в списке
+            skins.forEach(s => {
+                if (langData.skins && langData.skins[s.id]) {
+                    s.title = langData.skins[s.id];
+                }
+            });
+
+            updateCarousel();
+        }
+
+        // --- YANDEX GAMES SDK ИНИЦИАЛИЗАЦИЯ ---
+        let ysdkInstance = null;
+        let pendingAssets = 0;
+        let assetsAreReady = false;
+
+        function reportGameReadyIfPossible() {
+            if (assetsAreReady && ysdkInstance) {
+                ysdkInstance.features.LoadingAPI?.ready();
+            }
+        }
+
+        if (typeof YaGames !== 'undefined') {
+            YaGames.init().then(ysdk => {
+                window.ysdk = ysdk;
+                ysdkInstance = ysdk;
+
+                // Управление языком через Yandex Games SDK
+                if (ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) {
+                    const sdkLang = ysdk.environment.i18n.lang;
+                    updateUIWithLanguage(sdkLang);
+                } else {
+                    updateUIWithLanguage('ru');
+                }
+
+                reportGameReadyIfPossible();
+            }).catch(console.error);
+        } else {
+            ysdkInstance = { features: {} };
+            updateUIWithLanguage('ru');
+        }
+
         document.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, { passive: false });
 
-        // --- ЗВУКОВАЯ СИСТЕМА (WEB AUDIO API) ---
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
 
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new AudioCtx();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx && AudioCtx) audioCtx = new AudioCtx();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) {}
         }
 
         const Sound = {
+            play(fn) {
+                try {
+                    if (audioCtx && audioCtx.state === 'running') fn();
+                } catch(e) {}
+            },
             click() {
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.08);
-            },
-            hitSoft() {
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            },
-            hitHard() {
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
-            },
-            catHit() {
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(450, audioCtx.currentTime + 0.09);
-                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.09);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.09);
-            },
-            wall() {
-                if (!audioCtx) return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
-            },
-            goal() {
-                if (!audioCtx) return;
-                const now = audioCtx.currentTime;
-                [523.25, 659.25, 783.99].forEach((freq, idx) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
-                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.12);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + idx * 0.08);
-                    osc.stop(now + idx * 0.08 + 0.12);
-                });
-            },
-            win() {
-                if (!audioCtx) return;
-                const now = audioCtx.currentTime;
-                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                this.play(() => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
-                    gain.gain.setValueAtTime(0.3, now + idx * 0.1);
-                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.start(now + idx * 0.1);
-                    osc.stop(now + idx * 0.1 + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                });
+            },
+            hitSoft() {
+                this.play(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                });
+            },
+            hitHard() {
+                this.play(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                });
+            },
+            catHit() {
+                this.play(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(450, audioCtx.currentTime + 0.09);
+                    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.09);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.09);
+                });
+            },
+            wall() {
+                this.play(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                });
+            },
+            goal() {
+                this.play(() => {
+                    const now = audioCtx.currentTime;
+                    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.12);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.12);
+                    });
+                });
+            },
+            win() {
+                this.play(() => {
+                    const now = audioCtx.currentTime;
+                    [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.1);
+                        osc.stop(now + idx * 0.1 + 0.25);
+                    });
                 });
             },
             lose() {
-                if (!audioCtx) return;
-                const now = audioCtx.currentTime;
-                [300, 260, 200, 150].forEach((freq, idx) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-                    gain.gain.setValueAtTime(0.2, now + idx * 0.12);
-                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.15);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + idx * 0.12);
-                    osc.stop(now + idx * 0.12 + 0.15);
+                this.play(() => {
+                    const now = audioCtx.currentTime;
+                    [300, 260, 200, 150].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.15);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.12);
+                        osc.stop(now + idx * 0.12 + 0.15);
+                    });
                 });
             }
         };
@@ -361,78 +590,153 @@
         const container = document.getElementById('game-container');
 
         function resizeCanvas() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            canvas.width = container.clientWidth || window.innerWidth;
+            canvas.height = container.clientHeight || window.innerHeight;
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
+        const skins = [
+            { id: 'default', title: '🐱 Обычный котик', src: 'https://i.ibb.co/Q3HJN1Nm/Gemini-Generated-Image-h7tiw0h7tiw0h7ti.jpg' },
+            { id: 'pirate',  title: '🏴‍☠️ Кот-Пират',   src: 'https://i.ibb.co/1GpS2R9p/image.png' },
+            { id: 'police',  title: '👮 Кот-Коп',     src: 'https://i.ibb.co/gMTP4H22/image-2cc2cc.jpg' }
+        ];
+
+        const STORAGE_KEYS = { skin: 'tennisCat_selectedSkin', best: 'tennisCat_bestScore' };
+
+        function loadSavedSkin() {
+            try {
+                return localStorage.getItem(STORAGE_KEYS.skin) || 'default';
+            } catch (e) { return 'default'; }
+        }
+
+        function saveSkin(skinId) {
+            try { localStorage.setItem(STORAGE_KEYS.skin, skinId); } catch (e) {}
+        }
+
+        function loadBestScore() {
+            try {
+                return parseInt(localStorage.getItem(STORAGE_KEYS.best), 10) || 0;
+            } catch (e) { return 0; }
+        }
+
+        function saveBestScoreIfHigher(value) {
+            const current = loadBestScore();
+            if (value > current) {
+                try { localStorage.setItem(STORAGE_KEYS.best, String(value)); } catch (e) {}
+            }
+            updateBestScoreDisplay();
+        }
+
+        function updateBestScoreDisplay() {
+            const el = document.getElementById('best-score-value');
+            if (el) el.innerText = loadBestScore();
+        }
+
+        let selectedSkinId = loadSavedSkin();
+        let currentSkinIndex = Math.max(0, skins.findIndex(s => s.id === selectedSkinId));
+
         const URLS = {
             bg: 'https://i.ibb.co/Z1YF7SQf/image-2cc002.jpg',
-            catDefault: 'https://i.ibb.co/Q3HJN1Nm/Gemini-Generated-Image-h7tiw0h7tiw0h7ti.jpg',
-            catPirate: 'https://i.ibb.co/1GpS2R9p/image.png',
-            catPolice: 'https://i.ibb.co/gMTP4H22/image-2cc2cc.jpg',
             racket: 'https://i.ibb.co/Gf785Xkq/image.png'
         };
 
         const sprites = {};
+        const cleanedDataUrls = {};
 
-        function loadTransparentImage(key, url) {
-            const rawImg = new Image();
-            rawImg.crossOrigin = 'Anonymous';
-            rawImg.src = url;
-            rawImg.onload = function() {
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCanvas.width = rawImg.naturalWidth;
-                tempCanvas.height = rawImg.naturalHeight;
-                tempCtx.drawImage(rawImg, 0, 0);
-
-                try {
-                    const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                    const data = imgData.data;
-
-                    for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i], g = data[i + 1], b = data[i + 2];
-                        if (r > 220 && g > 220 && b > 220) {
-                            data[i + 3] = 0;
-                        }
-                    }
-
-                    tempCtx.putImageData(imgData, 0, 0);
-                    const cleanImg = new Image();
-                    cleanImg.src = tempCanvas.toDataURL('image/png');
-                    sprites[key] = cleanImg;
-                } catch (e) {
-                    sprites[key] = rawImg;
-                }
-            };
+        function assetLoadStarted() {
+            pendingAssets++;
         }
 
-        for (let key in URLS) {
-            if (key === 'bg') {
-                sprites[key] = new Image();
-                sprites[key].src = URLS[key];
-            } else {
-                loadTransparentImage(key, URLS[key]);
+        function assetLoadFinished() {
+            pendingAssets--;
+            if (pendingAssets <= 0) {
+                assetsAreReady = true;
+                reportGameReadyIfPossible();
             }
         }
 
+        function getTransparentImage(imgUrl, callback) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                tempCtx.drawImage(img, 0, 0);
+
+                try {
+                    const imgData = tempCtx.getImageData(0, 0, img.width, img.height);
+                    const data = imgData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i+1], b = data[i+2];
+                        if (r > 200 && g > 200 && b > 200) {
+                            data[i + 3] = 0;
+                        }
+                    }
+                    tempCtx.putImageData(imgData, 0, 0);
+                    const finalDataUrl = tempCanvas.toDataURL();
+                    const cleanImg = new Image();
+                    cleanImg.src = finalDataUrl;
+                    callback(cleanImg, finalDataUrl);
+                } catch (e) {
+                    callback(img, imgUrl);
+                }
+                assetLoadFinished();
+            };
+            img.onerror = () => {
+                callback(img, imgUrl);
+                assetLoadFinished();
+            };
+            img.src = imgUrl;
+        }
+
+        assetLoadStarted();
+        sprites.bg = new Image();
+        sprites.bg.crossOrigin = 'Anonymous';
+        sprites.bg.onload = assetLoadFinished;
+        sprites.bg.onerror = assetLoadFinished;
+        sprites.bg.src = URLS.bg;
+
+        assetLoadStarted();
+        getTransparentImage(URLS.racket, (cleanImg) => {
+            sprites.racket = cleanImg;
+        });
+
+        skins.forEach(skin => {
+            assetLoadStarted();
+            getTransparentImage(skin.src, (cleanImg, dataUrl) => {
+                sprites[skin.id] = cleanImg;
+                cleanedDataUrls[skin.id] = dataUrl;
+                if (skins[currentSkinIndex].id === skin.id) {
+                    updateCarousel();
+                }
+            });
+        });
+
+        // Настройки ИИ и Игры
         const DIFFICULTY_SETTINGS = {
-            easy:   { baseSpeed: 4, catSize: 130, catSpeed: 0.1, missChance: 0.25 },
-            medium: { baseSpeed: 6, catSize: 135, catSpeed: 0.2, missChance: 0.15 },
-            hard:   { baseSpeed: 8, catSize: 140, catSpeed: 0.3, missChance: 0.08 },
-            boss:   { baseSpeed: 10, catSize: 160, catSpeed: 0.45, missChance: 0.03 }
+            'easy':   { baseSpeed: 5, catSize: 130, catSpeed: 0.08, missChance: 0.35, attackPower: 1.0, aimAccuracy: 0.2 },
+            'medium': { baseSpeed: 7, catSize: 135, catSpeed: 0.15, missChance: 0.18, attackPower: 1.2, aimAccuracy: 0.5 },
+            'hard':   { baseSpeed: 9, catSize: 140, catSpeed: 0.25, missChance: 0.08, attackPower: 1.5, aimAccuracy: 0.8 },
+            'boss':   { baseSpeed: 11, catSize: 155, catSpeed: 0.40, missChance: 0.02, attackPower: 1.8, aimAccuracy: 0.95 }
         };
 
-        const WIN_SCORE = 10;
-        let currentDiff = 'medium';
+        let currentDiff = 'easy';
 
-        let score = 0;
+        function getSettings() {
+            return DIFFICULTY_SETTINGS[currentDiff] || DIFFICULTY_SETTINGS['easy'];
+        }
+
+        const WIN_SCORE = 5;
+        let playerScore = 0;
+        let catScore = 0;
         let isPlaying = false;
-        let currentSkin = 'default';
         let isDragging = false;
+        let isResetting = false;
         let catTargetX = 0;
+        let approachResolved = true;
 
         const ball = { 
             x: 0, y: 0,
@@ -451,7 +755,8 @@
         };
 
         function resetGame() {
-            const settings = DIFFICULTY_SETTINGS[currentDiff];
+            const settings = getSettings();
+            
             cat.width = settings.catSize;
             cat.height = settings.catSize;
             cat.x = canvas.width / 2;
@@ -465,15 +770,85 @@
             racket.vx = 0;
             racket.vy = 0;
 
-            serveBallFromCat();
+            isResetting = false;
+            serveBall(Math.random() > 0.5 ? 'player' : 'cat');
         }
 
-        function serveBallFromCat() {
-            const settings = DIFFICULTY_SETTINGS[currentDiff];
-            ball.x = cat.x;
-            ball.y = cat.y + 20;
-            ball.vx = (Math.random() - 0.5) * 4;
-            ball.vy = settings.baseSpeed;
+        function updateHUD() {
+            document.getElementById('player-score').innerText = playerScore;
+            document.getElementById('cat-score').innerText = catScore;
+        }
+
+        function resetBallToLoser(loser) {
+            isResetting = true;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.scaleX = 1;
+            ball.scaleY = 1;
+
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+
+            let targetX = 0;
+            let targetY = 0;
+
+            if (loser === 'player') {
+                targetX = racket.x;
+                targetY = racket.y - 30;
+            } else {
+                targetX = cat.x;
+                targetY = cat.y + 20;
+            }
+
+            const duration = 1200;
+            const startX = ball.x;
+            const startY = ball.y;
+            const startTime = performance.now();
+
+            function animatePass(now) {
+                if (!isPlaying) return;
+
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const ease = progress * progress * (3 - 2 * progress);
+
+                const currentTargetX = (loser === 'cat') ? cat.x : targetX;
+
+                ball.x = startX + (currentTargetX - startX) * ease;
+                ball.y = startY + (targetY - startY) * ease;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animatePass);
+                } else {
+                    isResetting = false;
+                    serveBall(loser);
+                }
+            }
+
+            requestAnimationFrame(animatePass);
+        }
+
+        function serveBall(server) {
+            const settings = getSettings();
+            ball.scaleX = 1;
+            ball.scaleY = 1;
+
+            if (server === 'cat') {
+                approachResolved = true;
+                ball.x = cat.x;
+                ball.y = cat.y + 20;
+                
+                const targetCorner = racket.x > canvas.width / 2 ? canvas.width * 0.2 : canvas.width * 0.8;
+                const dx = targetCorner - ball.x;
+                ball.vx = (dx / canvas.width) * (5 * settings.attackPower);
+                ball.vy = settings.baseSpeed;
+            } else {
+                approachResolved = false;
+                ball.x = racket.x;
+                ball.y = racket.y - 30;
+                ball.vx = (Math.random() - 0.5) * 4;
+                ball.vy = -settings.baseSpeed;
+            }
         }
 
         function updateRacketPosition(e) {
@@ -487,7 +862,6 @@
             racket.x = clientX - rect.left;
             let targetY = clientY - rect.top;
 
-            // 1. ОГРАНИЧЕНИЕ: СЕТКА (ракетка не может подняться выше 52% экрана)
             const netLimitY = canvas.height * 0.52;
             if (targetY < netLimitY) {
                 targetY = netLimitY;
@@ -514,6 +888,35 @@
         container.addEventListener('pointerup', () => isDragging = false);
         container.addEventListener('pointercancel', () => isDragging = false);
 
+        function updateCatAI(settings) {
+            if (ball.vy < 0) {
+                let predictedX = ball.x;
+                let tempY = ball.y;
+                let tempVx = ball.vx;
+
+                while (tempY > cat.y + 20) {
+                    tempY += ball.vy;
+                    predictedX += tempVx;
+                    if (predictedX < 10 || predictedX > canvas.width - 10) {
+                        tempVx *= -1;
+                    }
+                }
+
+                let attackOffset = 0;
+                if (Math.random() < settings.aimAccuracy) {
+                    const oppositeSide = racket.x > canvas.width / 2 ? -35 : 35;
+                    attackOffset = oppositeSide;
+                }
+
+                catTargetX = predictedX + attackOffset;
+            } else {
+                catTargetX = canvas.width / 2;
+            }
+
+            cat.x += (catTargetX - cat.x) * settings.catSpeed;
+            cat.x = Math.max(cat.width / 3, Math.min(canvas.width - cat.width / 3, cat.x));
+        }
+
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -525,71 +928,105 @@
             }
 
             if (isPlaying) {
-                const settings = DIFFICULTY_SETTINGS[currentDiff];
+                const settings = getSettings();
 
-                if (ball.vy < 0) {
-                    catTargetX = ball.x;
-                }
-                cat.x += (catTargetX - cat.x) * settings.catSpeed;
+                updateCatAI(settings);
 
-                ball.x += ball.vx;
-                ball.y += ball.vy;
+                if (!isResetting) {
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
 
-                ball.scaleX += (1 - ball.scaleX) * 0.15;
-                ball.scaleY += (1 - ball.scaleY) * 0.15;
+                    ball.scaleX += (1 - ball.scaleX) * 0.15;
+                    ball.scaleY += (1 - ball.scaleY) * 0.15;
 
-                const startY = cat.y + 20;
-                const endY = canvas.height * 0.8;
-                ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
-                ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
+                    const startY = cat.y + 20;
+                    const endY = canvas.height * 0.8;
+                    ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
+                    ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
 
-                if (ball.x - ball.currentRadius < 10 || ball.x + ball.currentRadius > canvas.width - 10) {
-                    ball.vx *= -1;
-                    ball.scaleX = 0.7;
-                    Sound.wall();
-                }
+                    if (ball.x - ball.currentRadius < 10 || ball.x + ball.currentRadius > canvas.width - 10) {
+                        ball.vx *= -1;
+                        if (Math.abs(ball.vx) < 2) {
+                            ball.vx = (ball.x < canvas.width / 2 ? 1 : -1) * 3;
+                        }
+                        ball.scaleX = 0.7;
+                        Sound.wall();
+                    }
 
-                if (ball.vy < 0 && ball.y <= cat.y + 30) {
-                    const distToCat = Math.abs(ball.x - cat.x);
-                    
-                    if (distToCat < cat.width * 0.55 && Math.random() >= settings.missChance) {
-                        ball.vy = settings.baseSpeed + Math.random() * 2;
-                        ball.vx = (Math.random() - 0.5) * 6;
-                        ball.scaleY = 0.6;
-                        Sound.catHit();
-                    } else if (ball.y <= cat.y - 15) {
-                        score++;
-                        document.getElementById('hud').innerText = score + ' / ' + WIN_SCORE;
-                        Sound.goal();
-                        
-                        if (score >= WIN_SCORE) {
-                            gameWin();
-                            return;
-                        } else {
-                            serveBallFromCat();
+                    // --- УДАР КОТА (БОТА) ---
+                    if (ball.vy < 0 && ball.y <= cat.y + 35) {
+                        const distToCat = Math.abs(ball.x - cat.x);
+
+                        if (!approachResolved && distToCat < cat.width * 0.6) {
+                            approachResolved = true;
+                            
+                            if (Math.random() >= settings.missChance) {
+                                let attackDirection = (ball.x - cat.x) / (cat.width / 2);
+                                
+                                if (Math.random() < settings.aimAccuracy) {
+                                    const playerIsLeft = racket.x < canvas.width / 2;
+                                    attackDirection = playerIsLeft ? 0.85 : -0.85;
+                                }
+
+                                ball.vy = (settings.baseSpeed + Math.random() * 2) * settings.attackPower;
+                                ball.vx = attackDirection * (6 + settings.attackPower * 2);
+                                ball.scaleY = 0.5;
+                                Sound.catHit();
+                            }
+                        }
+
+                        // Кот пропустил мяч
+                        if (ball.vy < 0 && ball.y <= cat.y - 25) {
+                            playerScore++;
+                            updateHUD();
+                            Sound.goal();
+                            
+                            if (playerScore >= WIN_SCORE) {
+                                gameWin();
+                            } else {
+                                resetBallToLoser('cat');
+                            }
                         }
                     }
-                }
 
-                const distToRacket = Math.hypot(ball.x - racket.x, ball.y - racket.y);
-                if (ball.vy > 0 && distToRacket < (racket.width / 2 + ball.currentRadius)) {
-                    const swingSpeed = Math.hypot(racket.vx, racket.vy);
+                    // --- УДАР ИГРОКА ---
+                    const distToRacket = Math.hypot(ball.x - racket.x, ball.y - racket.y);
+                    if (ball.vy > 0 && distToRacket < (racket.width / 2 + ball.currentRadius)) {
+                        const swingSpeed = Math.hypot(racket.vx, racket.vy);
+                        const hitPoint = (ball.x - racket.x) / (racket.width / 2);
 
-                    if (swingSpeed > 5) {
-                        ball.vy = -Math.min(18, settings.baseSpeed + swingSpeed * 0.6);
-                        ball.vx = racket.vx * 0.5 + (ball.x - racket.x) * 0.15;
-                        ball.scaleY = 0.4;
-                        Sound.hitHard();
-                    } else {
-                        ball.vy = -Math.max(3, settings.baseSpeed * 0.6);
-                        ball.vx = (ball.x - racket.x) * 0.1;
-                        ball.scaleY = 0.8;
-                        Sound.hitSoft();
+                        approachResolved = false;
+
+                        if (swingSpeed > 5) {
+                            ball.vy = -Math.min(20, settings.baseSpeed + swingSpeed * 0.6);
+                            ball.vx = hitPoint * 7 + racket.vx * 0.4;
+                            ball.scaleY = 0.4;
+                            Sound.hitHard();
+                        } else {
+                            ball.vy = -Math.max(4, settings.baseSpeed * 0.7);
+                            ball.vx = hitPoint * 4;
+                            ball.scaleY = 0.8;
+                            Sound.hitSoft();
+                        }
                     }
-                }
 
-                if (ball.y > canvas.height + 40) {
-                    gameOver();
+                    // Игрок пропустил мяч
+                    if (ball.y > canvas.height + 40) {
+                        catScore++;
+                        updateHUD();
+                        Sound.lose();
+
+                        if (catScore >= WIN_SCORE) {
+                            gameOver();
+                        } else {
+                            resetBallToLoser('player');
+                        }
+                    }
+                } else {
+                    const startY = cat.y + 20;
+                    const endY = canvas.height * 0.8;
+                    ball.progress = Math.max(0, Math.min(1, (ball.y - startY) / (endY - startY)));
+                    ball.currentRadius = ball.baseRadius * (0.6 + ball.progress * 0.6);
                 }
             }
 
@@ -597,9 +1034,7 @@
             ctx.save();
             ctx.translate(cat.x, cat.y);
 
-            let activeSprite = sprites.catDefault;
-            if (currentSkin === 'pirate') activeSprite = sprites.catPirate;
-            if (currentSkin === 'police') activeSprite = sprites.catPolice;
+            let activeSprite = sprites[selectedSkinId];
 
             if (activeSprite && activeSprite.complete && activeSprite.naturalWidth > 0) {
                 ctx.drawImage(activeSprite, -cat.width / 2, -cat.height / 2, cat.width, cat.height);
@@ -647,9 +1082,49 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ ---
-        function startGame() {
-            score = 0;
+        function updateCarousel() {
+            const skin = skins[currentSkinIndex];
+            const imgElem = document.getElementById('skin-preview-img');
+            const langData = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+            
+            imgElem.src = cleanedDataUrls[skin.id] || skin.src;
+            document.getElementById('skin-title-text').innerText = skin.title;
+
+            const selectBtn = document.getElementById('btn-select-skin');
+            if (skin.id === selectedSkinId) {
+                selectBtn.innerText = langData.btnSelected || 'ВЫБРАНО';
+                selectBtn.style.background = '#8bc34a';
+            } else {
+                selectBtn.innerText = langData.btnSelect || 'ВЫБРАТЬ';
+                selectBtn.style.background = '#4caf50';
+            }
+        }
+
+        document.getElementById('btn-prev-skin').onclick = function() {
+            currentSkinIndex = (currentSkinIndex - 1 + skins.length) % skins.length;
+            updateCarousel();
+        };
+
+        document.getElementById('btn-next-skin').onclick = function() {
+            currentSkinIndex = (currentSkinIndex + 1) % skins.length;
+            updateCarousel();
+        };
+
+        document.getElementById('btn-select-skin').onclick = function() {
+            selectedSkinId = skins[currentSkinIndex].id;
+            saveSkin(selectedSkinId);
+            updateCarousel();
+        };
+
+        function startGame(targetDiff) {
+            if (targetDiff && DIFFICULTY_SETTINGS[targetDiff]) {
+                currentDiff = targetDiff;
+            }
+            
+            playerScore = 0;
+            catScore = 0;
+            updateHUD();
+
             resetGame();
             isPlaying = true;
             
@@ -660,7 +1135,6 @@
             document.getElementById('inventory-screen').classList.add('hidden');
             
             document.getElementById('hud').classList.remove('hidden');
-            document.getElementById('hud').innerText = score + ' / ' + WIN_SCORE;
         }
 
         document.querySelectorAll('button').forEach(btn => {
@@ -681,14 +1155,24 @@
         };
 
         document.querySelectorAll('#difficulty-screen .btn[data-diff]').forEach(btn => {
-            btn.onclick = function(e) {
-                currentDiff = e.target.getAttribute('data-diff');
-                startGame();
-            };
+            btn.addEventListener('click', function() {
+                const diff = this.getAttribute('data-diff');
+                startGame(diff);
+            });
         });
 
-        document.getElementById('btn-restart').onclick = startGame;
-        document.getElementById('btn-win-restart').onclick = startGame;
+        document.getElementById('btn-restart').onclick = function() { startGame(); };
+        document.getElementById('btn-win-restart').onclick = function() { startGame(); };
+
+        document.getElementById('btn-next-level').onclick = function() {
+            const nextMap = {
+                'easy': 'medium',
+                'medium': 'hard',
+                'hard': 'boss'
+            };
+            const target = nextMap[currentDiff] || 'easy';
+            startGame(target);
+        };
 
         document.getElementById('btn-gameover-diff').onclick = function() {
             document.getElementById('game-over-screen').classList.add('hidden');
@@ -700,34 +1184,25 @@
             document.getElementById('main-menu').classList.remove('hidden');
         };
 
-        document.getElementById('btn-inventory').onclick = function() {
+        function openInventory() {
             document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('inventory-screen').classList.remove('hidden');
-        };
-
-        document.getElementById('btn-gameover-inventory').onclick = function() {
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('inventory-screen').classList.remove('hidden');
-        };
+            updateCarousel();
+        }
+
+        document.getElementById('btn-inventory').onclick = openInventory;
+        document.getElementById('btn-gameover-inventory').onclick = openInventory;
 
         document.getElementById('btn-back').onclick = function() {
             document.getElementById('inventory-screen').classList.add('hidden');
             document.getElementById('main-menu').classList.remove('hidden');
         };
 
-        document.querySelectorAll('.skin-btn').forEach(btn => {
-            btn.onclick = function(e) {
-                currentSkin = e.target.getAttribute('data-skin');
-                document.getElementById('inventory-screen').classList.add('hidden');
-                document.getElementById('main-menu').classList.remove('hidden');
-            };
-        });
-
         function gameOver() {
             isPlaying = false;
-            Sound.lose();
             document.getElementById('hud').classList.add('hidden');
-            document.getElementById('final-score').innerText = score + ' / ' + WIN_SCORE;
+            document.getElementById('final-score').innerText = `${playerScore} : ${catScore}`;
             document.getElementById('game-over-screen').classList.remove('hidden');
         }
 
@@ -735,10 +1210,20 @@
             isPlaying = false;
             Sound.win();
             document.getElementById('hud').classList.add('hidden');
-            document.getElementById('win-score-text').innerText = score + ' / ' + WIN_SCORE;
+            document.getElementById('win-score-text').innerText = `${playerScore} : ${catScore}`;
+            
+            const btnNext = document.getElementById('btn-next-level');
+            if (currentDiff === 'boss') {
+                btnNext.classList.add('hidden');
+            } else {
+                btnNext.classList.remove('hidden');
+            }
+
             document.getElementById('win-screen').classList.remove('hidden');
+            saveBestScoreIfHigher(playerScore);
         }
 
+        updateBestScoreDisplay();
         gameLoop();
     </script>
 </body>
